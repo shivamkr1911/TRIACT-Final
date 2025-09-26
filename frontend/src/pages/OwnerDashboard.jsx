@@ -122,7 +122,13 @@ const OwnerDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 bg-white p-4 rounded-lg shadow-md">
-          <RevenueChart data={data.revenueTrend} />
+          {data.revenueTrend && data.revenueTrend.length > 0 ? (
+            <RevenueChart data={data.revenueTrend} />
+          ) : (
+            <div className="text-center text-gray-500 py-10">
+              No revenue data for the last 30 days.
+            </div>
+          )}
         </div>
         <div className="lg:col-span-2 bg-white p-4 rounded-lg shadow-md">
           <CategoryPieChart data={data.salesByCategory} />

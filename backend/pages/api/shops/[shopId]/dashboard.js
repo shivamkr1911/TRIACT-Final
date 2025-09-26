@@ -117,8 +117,8 @@ async function handler(req, res) {
       unitsSoldThisMonth,
       revenueThisMonth,
       profitThisMonth,
-      revenueTrend,
-      salesByCategory,
+      revenueTrend: revenueTrend || [],
+      salesByCategory: salesByCategory || [],
     });
   } catch (error) {
     console.error("Dashboard Data Error:", error);

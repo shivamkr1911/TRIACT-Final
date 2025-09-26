@@ -1,12 +1,11 @@
-import connectDB from "../../../../../lib/db";
-import Product from "../../../../../models/Product";
-import Shop from "../../../../../models/Shop";
-import { authMiddleware } from "../../../../../lib/auth";
+import connectDB from "../../../../../lib/db.js";
+import Product from "../../../../../models/Product.js";
+import Shop from "../../../../../models/Shop.js";
+import { authMiddleware } from "../../../../../lib/auth.js";
 
 async function handler(req, res) {
   const { shopId } = req.query;
 
-  // Security Check: Ensure the user belongs to the shop they are trying to access
   if (req.user.shopId !== shopId) {
     return res
       .status(403)
@@ -27,7 +26,6 @@ async function handler(req, res) {
       break;
 
     case "POST":
-      // Role Check: Only owners can add products
       if (req.user.role !== "owner") {
         return res
           .status(403)
@@ -35,11 +33,19 @@ async function handler(req, res) {
       }
 
       try {
-        const { name, category, price, stock } = req.body;
-        if (!name || !category || price === undefined || stock === undefined) {
+        const { name, category, price, cost, stock } = req.body;
+        if (
+          !name ||
+          !category ||
+          price === undefined ||
+          cost === undefined ||
+          stock === undefined
+        ) {
           return res
             .status(400)
-            .json({ message: "Missing required product fields." });
+            .json({
+              message: "Missing required product fields, including cost.",
+            });
         }
 
         const newProduct = new Product({
@@ -47,6 +53,7 @@ async function handler(req, res) {
           name,
           category,
           price,
+          cost,
           stock,
         });
 
