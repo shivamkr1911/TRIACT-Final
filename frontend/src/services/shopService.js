@@ -66,6 +66,13 @@ const updateShopDetails = async (shopId, shopData) => {
   return response.data.shop;
 };
 
+const createShop = async (token, shopData) => {
+  const response = await api.post("/api/shops", shopData, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data.shop;
+};
+
 const shopService = {
   getOwnerDashboardData,
   getProducts,
@@ -80,6 +87,7 @@ const shopService = {
   markNotificationsAsRead,
   getShopDetails,
   updateShopDetails,
+  createShop,
 };
 
 export default shopService;

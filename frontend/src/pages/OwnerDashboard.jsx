@@ -3,35 +3,19 @@ import { useAuth } from "../hooks/useAuth";
 import shopService from "../services/shopService";
 import RevenueChart from "../components/RevenueChart.jsx";
 import CategoryPieChart from "../components/CategoryPieChart.jsx";
+import CreateShopForm from "../components/CreateShopForm.jsx";
 
-// Icon components for a nicer UI
 const DollarSignIcon = () => (
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-  />
+  <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 );
 const TrendingUpIcon = () => (
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-3.75-.625m3.75.625l-6.25 3.75"
-  />
+  <path d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-3.75-.625m3.75.625l-6.25 3.75" />
 );
 const ChartBarIcon = () => (
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
-  />
+  <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
 );
 const CubeIcon = () => (
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"
-  />
+  <path d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
 );
 
 const OwnerDashboard = () => {
@@ -66,27 +50,22 @@ const OwnerDashboard = () => {
     new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
-    }).format(amount);
+    }).format(amount || 0);
 
-  if (loading)
+  if (loading) {
     return <div className="text-center mt-10">Loading dashboard...</div>;
-  if (error)
-    return <div className="text-center mt-10 text-red-500">{error}</div>;
-  if (user && user.role === "owner" && !user.shopId) {
-    return (
-      <div className="text-center mt-10 bg-white p-8 rounded-lg shadow-md max-w-lg mx-auto">
-        <h2 className="text-2xl font-bold mb-4">Welcome, {user.name}!</h2>
-        <p className="text-gray-600">
-          You haven't created a shop yet. Please create one to get started.
-        </p>
-        <p className="mt-4 text-sm text-gray-500">
-          (Follow the steps in our previous message to create your shop from the
-          browser's console.)
-        </p>
-      </div>
-    );
   }
-  if (!data) return <div className="text-center mt-10">No data available.</div>;
+  if (error) {
+    return <div className="text-center mt-10 text-red-500">{error}</div>;
+  }
+
+  if (user && user.role === "owner" && !user.shopId) {
+    return <CreateShopForm />;
+  }
+
+  if (!data) {
+    return <div className="text-center mt-10">No data available.</div>;
+  }
 
   const kpis = [
     {
