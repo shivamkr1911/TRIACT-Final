@@ -1,7 +1,7 @@
-import connectDB from "../../lib/db.js";
-import Shop from "../../models/Shop.js";
-import User from "../../models/User.js";
-import { ownerMiddleware } from "../../lib/auth.js";
+import connectDB from "../../../lib/db.js";
+import Shop from "../../../models/Shop.js";
+import User from "../../../models/User.js";
+import { ownerMiddleware } from "../../../lib/auth.js";
 
 async function handler(req, res) {
   if (req.method !== "POST") {

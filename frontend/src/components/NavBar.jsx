@@ -8,6 +8,7 @@ const Dropdown = ({
   buttonContent,
   children,
   widthClass = "w-56",
+  onOpen = () => {},
   onClose = () => {},
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,8 +24,11 @@ const Dropdown = ({
   useClickOutside(dropdownRef, closeDropdown);
 
   const handleToggle = () => {
-    setIsOpen((prev) => !prev);
-    if (isOpen) {
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    if (nextState) {
+      onOpen();
+    } else {
       onClose();
     }
   };
@@ -41,7 +45,7 @@ const Dropdown = ({
         <div
           className={`absolute right-0 mt-2 ${widthClass} bg-white rounded-md shadow-lg z-20 border py-1`}
         >
-          <div onClick={closeDropdown}>{children}</div>
+          <div onClick={() => setIsOpen(false)}>{children}</div>
         </div>
       )}
     </div>
@@ -59,16 +63,16 @@ const NavBar = () => {
         .getNotifications(user.shopId)
         .then(setNotifications)
         .catch((err) => console.error("Failed to fetch notifications:", err));
+    } else {
+      setNotifications([]);
     }
   }, [isAuthenticated, user]);
 
   useEffect(() => {
-    if (isAuthenticated && user?.shopId) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated, user, fetchNotifications]);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 1000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -250,7 +254,7 @@ const NavBar = () => {
 
                 <button
                   onClick={handleLogout}
-                  className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
+                  className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition duration-200"
                 >
                   Logout
                 </button>

@@ -3,10 +3,12 @@ import { useAuth } from "../hooks/useAuth";
 import shopService from "../services/shopService";
 
 const CreateShopForm = () => {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
   const [shopName, setShopName] = useState("");
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
+
+  const [isShopCreated, setIsShopCreated] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,13 +19,31 @@ const CreateShopForm = () => {
     }
     try {
       await shopService.createShop(token, { shopName, address });
-      // This will reload the entire application, and the AuthContext
-      // will now find the user with a shopId, showing the dashboard.
-      window.location.reload();
+      setIsShopCreated(true);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to create shop.");
     }
   };
+
+  if (isShopCreated) {
+    return (
+      <div className="text-center mt-10 bg-white p-8 rounded-lg shadow-md max-w-lg mx-auto">
+        <h2 className="text-2xl font-bold mb-4 text-green-600">✅ Success!</h2>
+        <p className="text-gray-700 mb-6">
+          Your shop, "{shopName}", has been created.
+        </p>
+        <p className="text-gray-600 mb-6">
+          Please log out and log back in to access your new dashboard.
+        </p>
+        <button
+          onClick={logout}
+          className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700"
+        >
+          Log Out
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="text-center mt-10 bg-white p-8 rounded-lg shadow-md max-w-lg mx-auto">

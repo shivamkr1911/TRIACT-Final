@@ -70,8 +70,14 @@ const ManageEmployees = () => {
     e.preventDefault();
     setModalError("");
     try {
+      // --- THIS IS THE UPDATED LOGIC ---
+      // When the salary amount is changed, we also reset the status to "pending" (Due)
+      const updatedSalary = {
+        amount: parseFloat(formData.salary.amount),
+        status: "pending",
+      };
       await shopService.updateEmployee(user.shopId, selectedEmployee._id, {
-        salary: { amount: parseFloat(formData.salary.amount) },
+        salary: updatedSalary,
       });
       setIsEditModalOpen(false);
       fetchEmployees();
@@ -104,7 +110,9 @@ const ManageEmployees = () => {
 
   const handleResetAllSalaries = async () => {
     if (
-      window.confirm('Are you sure you want to reset all salaries to "Due"?')
+      window.confirm(
+        'Are you sure you want to reset all employee salaries to "Due"?'
+      )
     ) {
       try {
         const updatePromises = employees.map((emp) =>
@@ -210,7 +218,6 @@ const ManageEmployees = () => {
           </button>
         </form>
       </Modal>
-
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -244,7 +251,6 @@ const ManageEmployees = () => {
           </button>
         </form>
       </Modal>
-
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">Manage Employees</h1>
