@@ -167,6 +167,12 @@ const NavBar = () => {
                 >
                   Scan Invoice
                 </Link>
+                <Link
+                  to="/view-invoices"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  View Invoices
+                </Link>
               </Dropdown>
 
               {user?.role === "owner" && (

@@ -73,6 +73,11 @@ const createShop = async (token, shopData) => {
   return response.data.shop;
 };
 
+const getInvoices = async (shopId) => {
+  const response = await api.get(`/api/shops/${shopId}/invoices`);
+  return response.data.invoices;
+};
+
 const shopService = {
   getOwnerDashboardData,
   getProducts,
@@ -88,6 +93,7 @@ const shopService = {
   getShopDetails,
   updateShopDetails,
   createShop,
+  getInvoices,
 };
 
 export default shopService;

@@ -176,6 +176,7 @@ async function handler(req, res) {
           shopId,
           orderId: savedOrder._id,
           customerName: savedOrder.customerName,
+          billerName: savedOrder.billerName,
           total: savedOrder.total,
           pdfPath: relativePdfPath,
         });

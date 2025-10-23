@@ -13,6 +13,7 @@ import ManageStock from "./pages/ManageStock.jsx";
 import ManageEmployees from "./pages/ManageEmployees.jsx";
 import ShopSettings from "./pages/ShopSettings.jsx";
 import SalaryInfo from "./pages/SalaryInfo.jsx";
+import ViewInvoices from "./pages/ViewInvoices.jsx";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -91,6 +92,14 @@ function App() {
             element={
               <PrivateRoute>
                 <SalaryInfo />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/view-invoices"
+            element={
+              <PrivateRoute>
+                <ViewInvoices />
               </PrivateRoute>
             }
           />

@@ -21,6 +21,11 @@ const invoiceSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    billerName: {
+      type: String,
+      required: true,
+      default: "Unknown",
+    },
     total: {
       type: Number,
       required: true,
