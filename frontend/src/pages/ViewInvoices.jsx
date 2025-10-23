@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import shopService from "../services/shopService";
 
@@ -7,6 +7,13 @@ const ViewInvoices = () => {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // --- State for all filters ---
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [billerFilter, setBillerFilter] = useState("");
+  const [customerNameFilter, setCustomerNameFilter] = useState(""); // NEW
+  const [invoiceIdFilter, setInvoiceIdFilter] = useState(""); // NEW
 
   const fetchInvoices = useCallback(async () => {
     if (!user?.shopId) return;
@@ -32,12 +39,134 @@ const ViewInvoices = () => {
     }).format(amount || 0);
   };
 
+  // --- Updated filter logic ---
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((invoice) => {
+      const invoiceDate = new Date(invoice.date);
+
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (invoiceDate < start) return false;
+      }
+
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (invoiceDate > end) return false;
+      }
+
+      if (billerFilter) {
+        if (
+          !invoice.billerName ||
+          !invoice.billerName.toLowerCase().includes(billerFilter.toLowerCase())
+        ) {
+          return false;
+        }
+      }
+
+      // NEW: Filter by Customer Name
+      if (customerNameFilter) {
+        if (
+          !invoice.customerName ||
+          !invoice.customerName
+            .toLowerCase()
+            .includes(customerNameFilter.toLowerCase())
+        ) {
+          return false;
+        }
+      }
+
+      // NEW: Filter by Invoice ID (Order ID)
+      if (invoiceIdFilter) {
+        if (!invoice.orderId.toString().startsWith(invoiceIdFilter)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [
+    invoices,
+    startDate,
+    endDate,
+    billerFilter,
+    customerNameFilter,
+    invoiceIdFilter,
+  ]); // <-- Add new dependencies
+
   if (loading) return <div>Loading invoices...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-4">Past Invoices</h1>
+
+      {/* --- NEW: Upgraded Filter Bar --- */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+        {/* Date Filters */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            From Date
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="mt-1 border rounded-md px-3 py-2 w-full"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            To Date
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="mt-1 border rounded-md px-3 py-2 w-full"
+          />
+        </div>
+
+        {/* Text Filters */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Invoice ID
+          </label>
+          <input
+            type="text"
+            placeholder="Filter by Invoice ID..."
+            value={invoiceIdFilter}
+            onChange={(e) => setInvoiceIdFilter(e.target.value)}
+            className="mt-1 border rounded-md px-3 py-2 w-full"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Customer Name
+          </label>
+          <input
+            type="text"
+            placeholder="Filter by customer..."
+            value={customerNameFilter}
+            onChange={(e) => setCustomerNameFilter(e.target.value)}
+            className="mt-1 border rounded-md px-3 py-2 w-full"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Billed By
+          </label>
+          <input
+            type="text"
+            placeholder="Filter by biller..."
+            value={billerFilter}
+            onChange={(e) => setBillerFilter(e.target.value)}
+            className="mt-1 border rounded-md px-3 py-2 w-full"
+          />
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -63,7 +192,7 @@ const ViewInvoices = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {invoices.map((invoice) => (
+            {filteredInvoices.map((invoice) => (
               <tr key={invoice._id}>
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
                   {invoice.orderId}
@@ -94,8 +223,12 @@ const ViewInvoices = () => {
             ))}
           </tbody>
         </table>
-        {invoices.length === 0 && (
-          <p className="text-center text-gray-500 mt-4">No invoices found.</p>
+        {filteredInvoices.length === 0 && (
+          <p className="text-center text-gray-500 mt-4">
+            {invoices.length > 0
+              ? "No invoices match your current filters."
+              : "No invoices found."}
+          </p>
         )}
       </div>
     </div>
