@@ -468,6 +468,11 @@ const seedData = async () => {
     console.log(`${products.length} products created.`);
 
     console.log("Generating 250 random orders...");
+
+    // --- ADD THIS LINE ---
+    const billerNames = [employee1.name, employee2.name]; 
+    // ---
+
     const ordersToCreate = [];
     const customerNames = [
       "Suresh",
@@ -497,10 +502,14 @@ const seedData = async () => {
         });
         orderTotal += randomProduct.price * quantity;
       }
+      // --- ADD THIS LINE ---
+      const randomBiller = billerNames[Math.floor(Math.random() * billerNames.length)];
+      // ---  
       ordersToCreate.push({
         shopId: shop1._id,
         customerName:
           customerNames[Math.floor(Math.random() * customerNames.length)],
+        billerName: randomBiller,
         items: orderItems,
         total: orderTotal,
         date: getRandomDate(),

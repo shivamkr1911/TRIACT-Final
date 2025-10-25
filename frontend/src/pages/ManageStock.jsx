@@ -43,8 +43,26 @@ const ManageStock = () => {
     if (!user?.shopId) return;
     try {
       setLoading(true);
-      const data = await shopService.getProducts(user.shopId);
-      setProducts(data);
+      // We will fetch products and forecast data at the same time
+      const [productsData, forecastData] = await Promise.all([
+        shopService.getProducts(user.shopId),
+        shopService.getForecast(user.shopId),
+      ]);
+
+      // Create a Map of the forecast data for easy merging
+      const forecastMap = new Map(
+        forecastData.map((p) => [p._id, p.forecast])
+      );
+
+      // Merge the forecast data into the main products list
+      const mergedProducts = productsData.map((p) => ({
+        ...p,
+        forecast: forecastMap.get(p._id) || null, // Attach the forecast object
+      }));
+
+      setProducts(mergedProducts);
+      // ----------------------------------------
+
     } catch (err) {
       setPageError("Failed to fetch products.");
     } finally {
@@ -128,7 +146,7 @@ const ManageStock = () => {
       .filter((p) => (showLowStock ? p.stock < LOW_STOCK_THRESHOLD : true));
   }, [products, searchTerm, selectedCategory, showLowStock]);
 
-  if (loading) return <div>Loading stock information...</div>;
+  if (loading) return <div>Loading stock information and forecast...</div>; // Updated text
   if (pageError) return <div className="text-red-500">{pageError}</div>;
 
   return (
@@ -345,13 +363,28 @@ const ManageStock = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Stock
                 </th>
+                {/* --- ADD THIS NEW HEADER --- */}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Forecast (Days Left)
+                </th>
+                {/* --------------------------- */}
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product) => {
+                // --- ADD THIS HELPER LOGIC ---
+                const daysLeft = product.forecast?.daysUntilStockOut;
+                let forecastText = "N/A"; // Default for non-selling items
+                if (daysLeft === undefined) {
+                  forecastText = "..."; // Loading
+                } else if (daysLeft !== Infinity) {
+                  forecastText = Math.floor(daysLeft).toString();
+                }
+                // -----------------------------
+              return (
                 <tr
                   key={product._id}
                   className={
@@ -373,6 +406,17 @@ const ManageStock = () => {
                   <td className="px-6 py-4 whitespace-nowrap font-bold">
                     {product.stock}
                   </td>
+                  {/* --- ADD THIS NEW DATA CELL --- */}
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap font-bold ${
+                        daysLeft < 14
+                          ? "text-red-600"
+                          : "text-gray-700"
+                      }`}
+                      >
+                      {forecastText}
+                    </td>
+                    {/* -------------------------------- */}
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <button
                       onClick={() => openEditModal(product)}
@@ -382,7 +426,8 @@ const ManageStock = () => {
                     </button>
                   </td>
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         </div>

@@ -147,6 +147,15 @@ const NavBar = () => {
                 Home
               </Link>
 
+              {/* --- ADD THIS NEW LINK --- */}
+              <Link
+                to="/ai-chat"
+                className="text-gray-600 hover:text-indigo-600 font-medium"
+              >
+                AI Assistant
+              </Link>
+              {/* --------------------------- */}
+
               <Dropdown
                 buttonContent={
                   <>

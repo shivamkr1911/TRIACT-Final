@@ -14,6 +14,7 @@ import ManageEmployees from "./pages/ManageEmployees.jsx";
 import ShopSettings from "./pages/ShopSettings.jsx";
 import SalaryInfo from "./pages/SalaryInfo.jsx";
 import ViewInvoices from "./pages/ViewInvoices.jsx";
+import AiChat from "./pages/AiChat.jsx"; // <-- 1. Import the new page
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -103,6 +104,16 @@ function App() {
               </PrivateRoute>
             }
           />
+          {/* --- 2. ADD THIS NEW ROUTE --- */}
+          <Route
+            path="/ai-chat"
+            element={
+              <PrivateRoute>
+                <AiChat />
+              </PrivateRoute>
+            }
+          />
+          {/* ----------------------------- */}
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </main>

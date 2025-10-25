@@ -78,6 +78,21 @@ const getInvoices = async (shopId) => {
   return response.data.invoices;
 };
 
+// --- ADD THIS NEW FUNCTION ---
+const getForecast = async (shopId) => {
+  // This calls the endpoint you just created
+  const response = await api.get(`/api/shops/${shopId}/ai/forecast`);
+  return response.data.products; // It returns the full list of products with forecast data
+};
+// -----------------------------
+
+// --- ADD THIS NEW FUNCTION ---
+const getAiChatResponse = async (shopId, query) => {
+  const response = await api.post(`/api/shops/${shopId}/ai/chat`, { query });
+  return response.data; // Returns { answer: "...", debugComment: "..." }
+};
+// -----------------------------
+
 const shopService = {
   getOwnerDashboardData,
   getProducts,
@@ -94,6 +109,8 @@ const shopService = {
   updateShopDetails,
   createShop,
   getInvoices,
+  getForecast, // <-- Add it to the exported object
+  getAiChatResponse, // <-- Add it to the exported object
 };
 
 export default shopService;
