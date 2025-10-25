@@ -4,14 +4,37 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import shopService from "../services/shopService";
 
+// --- 1. Define a key for localStorage ---
+const CHAT_STORAGE_KEY = "triactAiChatHistory";
+
 const AiChat = () => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState([
-    {
-      sender: "ai",
-      text: "Hi! I'm your TRIACT AI assistant. Ask me questions about your inventory, sales, or employees.",
-    },
-  ]);
+
+  // --- 2. Load initial messages from localStorage ---
+  const [messages, setMessages] = useState(() => {
+    const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (savedMessages) {
+      try {
+        // Attempt to parse the saved messages
+        const parsedMessages = JSON.parse(savedMessages);
+        // Basic validation: Check if it's an array and has at least one item
+        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+          return parsedMessages;
+        }
+      } catch (e) {
+        console.error("Failed to parse chat history from localStorage:", e);
+        // If parsing fails, fall back to default
+      }
+    }
+    // Default message if nothing is saved or parsing failed
+    return [
+      {
+        sender: "ai",
+        text: "Hi! I'm your TRIACT AI assistant. Ask me questions about your inventory, sales, or employees.",
+      },
+    ];
+  });
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -20,6 +43,15 @@ const AiChat = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // --- 3. Save messages to localStorage whenever they change ---
+  useEffect(() => {
+    // Don't save if it's just the initial default message
+    if (messages.length > 1 || messages[0].sender !== "ai" || messages[0].text !== "Hi! I'm your TRIACT AI assistant. Ask me questions about your inventory, sales, or employees.") {
+       localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,12 +81,34 @@ const AiChat = () => {
     }
   };
 
+  // --- 4. (Optional but recommended) Add a button to clear history ---
+  const clearChatHistory = () => {
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+    setMessages([
+      {
+        sender: "ai",
+        text: "Chat history cleared. How can I help you?",
+      },
+    ]);
+  };
+
+
   return (
     <div className="flex flex-col h-[80vh] max-w-3xl mx-auto bg-white shadow-lg rounded-lg">
-      <h1 className="text-xl font-bold p-4 border-b text-gray-800">
-        AI Inventory Assistant
-      </h1>
-      
+      <div className="flex justify-between items-center p-4 border-b"> {/* Added flex container */}
+        <h1 className="text-xl font-bold text-gray-800">
+          AI Inventory Assistant
+        </h1>
+         {/* --- Add the clear button here --- */}
+         <button
+            onClick={clearChatHistory}
+            className="text-xs text-gray-500 hover:text-red-600 border px-2 py-1 rounded hover:border-red-600"
+            title="Clear chat history"
+          >
+            Clear Chat
+          </button>
+      </div>
+
       {/* Message Area */}
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
         {messages.map((msg, index) => (

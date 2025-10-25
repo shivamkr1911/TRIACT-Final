@@ -10,6 +10,9 @@ import Order from "../../../../../models/Order.js";
 import Invoice from "../../../../../models/Invoice.js";
 import User from "../../../../../models/User.js";
 
+// 1. Import the Gemini model function instead of Ollama
+import { getGeminiModel } from "../../../../../lib/gemini.js";
+
 // A security-focused map of allowed models
 const ALLOWED_MODELS = {
   Product,
@@ -62,52 +65,56 @@ function cleanMongoQuery(obj) {
 }
 // --- END OF NEW FUNCTION ---
 
-// --- This helper function calls your local Ollama server ---
-async function callOllama(prompt, format) {
-  const body = {
-    model: "gemma3:4b", // <-- Use the gemma:2b model
-    prompt: prompt, 
-    stream: false,
-    format: format,
-    keep_alive: "5m" // <-- ADD THIS LINE // This will be 'json' for the first step
+// --- CHANGED ---
+// 2. This is the new function to call the Google Gemini API
+/**
+ * Calls the Gemini API with a specific prompt and response format.
+ * @param {string} prompt The user's prompt.
+ * @param {'json' | 'text'} format The desired output format.
+ * @returns {Promise<string>} The string response from the AI.
+ */
+async function callGemini(prompt, format) {
+  const model = getGeminiModel(); // Gets 'gemini-1.5-flash' from your lib
+
+  const generationConfig = {
+    temperature: 0.2, // Lower temp for more factual, less creative queries
+    maxOutputTokens: 2048,
+    // This is the key feature: forcing JSON or plain text output
+    response_mime_type: format === "json" ? "application/json" : "text/plain",
   };
 
   try {
-    const response = await fetch("http://localhost:11434/api/generate", {
-      method: "POST",
-      body: JSON.stringify(body),
-      headers: { "Content-Type": "application/json" },
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig,
     });
+    
+    const response = result.response;
+    return response.text();
 
-    if (!response.ok) {
-      if (response.status === 500) {
-         const errorBody = await response.text();
-         console.error("Ollama 500 Error Body:", errorBody);
-         throw new Error(`Ollama request failed with status 500. Is the model too large for your RAM? Body: ${errorBody}`);
-      }
-      throw new Error(`Ollama request failed with status ${response.status}`);
-    }
-
-    const json = await response.json();
-    return json.response; // Ollama puts the text string in the 'response' key
   } catch (e) {
-    if (e.code === "ECONNREFUSED") {
-      throw new Error("Ollama connection refused. Is Ollama running?");
+    console.error("[GEMINI API Error]:", e);
+    // Handle potential safety blocks or other API errors
+    if (e.message.includes("SAFETY")) {
+       throw new Error("The request was blocked due to safety settings.");
     }
-    throw e;
+    // This will bubble up and be caught by the main handler
+    throw new Error(`Gemini API request failed: ${e.message}`);
   }
 }
 
-// --- Prompts remain the same ---
+
+// --- CHANGED ---
+// 3. Prompts are slightly tweaked for Gemini.
 const getQueryGenerationPrompt = (question, schemas) => `
-You are an expert MongoDB query assistant. Your job is to convert a user's natural language question into a valid, secure MongoDB find() query.
-You must only respond with a single JSON object. Do not include any other text, markdown, or explanations.
+You are an expert MongoDB query assistant. Your job is to convert a user's natural language question into a valid MongoDB find() query.
+You must only respond with a single JSON object.
 
 The database schemas you can use are:
 ${schemas}
 
 Rules:
-1.  Always use regex for string matching (e.g., "lays chips") to make it case-insensitive.
+1.  Always use regex for string matching (e.g., "lays chips") to make it case-insensitive. Use the $options: 'i' flag. Example: { name: { $regex: 'lays', $options: 'i' } }
 2.  If the question implies sorting, add an "options" key with a "sort" object.
 3.  If the question implies a number, add an "options" key with a "limit" object (max 50).
 4.  Provide a short "comment" explaining your query.
@@ -145,7 +152,6 @@ Rules:
 Assistant's Answer:
 `;
 
-// --- The handler logic is updated ---
 async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method Not Allowed" });
@@ -165,33 +171,21 @@ async function handler(req, res) {
   try {
     // === Step 1: Generate the MongoDB Query ===
     const queryPrompt = getQueryGenerationPrompt(userQuestion, SCHEMAS);
-    const combinedQueryPrompt = `You are a MongoDB expert that only replies with a single, valid JSON object and no other text. ${queryPrompt}`;
 
-    const queryGenText = await callOllama(combinedQueryPrompt, "json");
+    // Call Gemini with "json" format
+    const queryGenText = await callGemini(queryPrompt, "json");
 
-    // --- THIS IS THE NEW (FIXED) CODE ---
     let parsedQuery;
     try {
-      // This regex finds the first '{' and the last '}' in the string.
-      // This is very effective at extracting a JSON object from text.
-      const jsonMatch = queryGenText.match(/\{[\s\S]*\}/);
-
-      if (jsonMatch) {
-        // If we found a JSON-like block, try to parse *only that block*
-        parsedQuery = JSON.parse(jsonMatch[0]);
-      } else {
-        // If no '{...}' block was found at all, it's an invalid response.
-        throw new Error("No JSON object found in AI response");
-      }
-
-  } catch (e) {
+      // Gemini's JSON mode is very reliable, so we can parse directly.
+      // The complex regex from the Ollama version is no longer needed.
+      parsedQuery = JSON.parse(queryGenText);
+    } catch (e) {
       console.error("AI failed to generate valid JSON. Raw response:", queryGenText);
-      console.error("Parse Error:", e.message); // Log the specific parse error
+      console.error("Parse Error:", e.message);
       return res.status(500).json({ answer: "The AI assistant had trouble understanding that. Please rephrase your question." });
-  }
-  // ---
-
-    // --- THIS IS THE FIXED CODE ---
+    }
+    
     const modelName = parsedQuery.model || parsedQuery.model_name;
     const { query, options, comment } = parsedQuery;
 
@@ -202,11 +196,9 @@ async function handler(req, res) {
       return res.status(400).json({ answer: "I can't answer questions about that topic." });
     }
 
-    // --- ADD THIS LINE TO CLEAN THE QUERY ---
     const cleanedQuery = cleanMongoQuery(query);
-
     // IMPORTANT: Inject the shopId into every query for security
-    const secureQuery = { ...cleanedQuery, shopId: shopId }; // <-- Use cleanedQuery
+    const secureQuery = { ...cleanedQuery, shopId: shopId }; 
 
     const queryOptions = {
         limit: options?.limit || 20, 
@@ -217,16 +209,24 @@ async function handler(req, res) {
 
     // === Step 3: Generate the Final Answer ===
     const answerPrompt = getAnswerGenerationPrompt(userQuestion, dbResults);
-    const combinedAnswerPrompt = `You are a friendly and helpful shop assistant. ${answerPrompt}`;
 
-    const finalAnswer = await callOllama(combinedAnswerPrompt, null); // null format = plain text
+    // Call Gemini with "text" format
+    const finalAnswer = await callGemini(answerPrompt, "text");
 
     res.status(200).json({ answer: finalAnswer, debugComment: comment });
 
   } catch (error) {
     console.error("AI Chat Error:", error);
-    if (error.message.includes("Ollama connection refused")) {
-       return res.status(500).json({ answer: "I can't connect to the local AI server. Did you install and run Ollama?" });
+    // Add specific error handling for the API key
+    if (error.message.includes("GEMINI_API_KEY")) {
+       return res.status(500).json({ answer: "The AI server is not configured. Please add a GEMINI_API_KEY to the .env file." });
+    }
+    if (error.message.includes("safety settings")) {
+        return res.status(500).json({ answer: "I'm sorry, I can't answer that question as it was blocked by my safety settings." });
+    }
+    // Generic error for other API failures
+    if (error.message.includes("Gemini API")) {
+        return res.status(500).json({ answer: "I'm having trouble connecting to the AI assistant. Please try again later." });
     }
     res.status(500).json({ message: "Internal Server Error" });
   }
