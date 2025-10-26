@@ -7,7 +7,7 @@ const orderItemSchema = new mongoose.Schema(
       ref: "Product",
       required: true,
     },
-    name: {
+    name: { // Product name at time of sale
       type: String,
       required: true,
     },
@@ -15,10 +15,16 @@ const orderItemSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    price: {
+    price: { // Selling price at time of sale
       type: Number,
       required: true,
     },
+    // --- ADDED ---
+    cost: { // Cost price at time of sale
+      type: Number,
+      required: true,
+    },
+    // -----------
   },
   { _id: false }
 );
@@ -40,10 +46,16 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
     items: [orderItemSchema],
-    total: {
+    total: { // This is the total Revenue
       type: Number,
       required: true,
     },
+    // --- ADDED ---
+    totalProfit: { // Calculated profit for the order
+      type: Number,
+      required: true,
+    },
+    // -----------
     date: {
       type: Date,
       default: Date.now,

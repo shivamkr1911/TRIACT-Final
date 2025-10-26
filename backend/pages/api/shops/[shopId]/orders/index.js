@@ -10,6 +10,7 @@ import Notification from "../../../../../models/Notification.js";
 import { authMiddleware } from "../../../../../lib/auth.js";
 import mongoose from "mongoose";
 
+// --- PDF Generation function remains the same ---
 async function generateInvoicePDF(order, shop, filePath) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 });
@@ -98,6 +99,8 @@ async function generateInvoicePDF(order, shop, filePath) {
     writeStream.on("error", reject);
   });
 }
+// --- End PDF Generation ---
+
 
 async function handler(req, res) {
   const { shopId } = req.query;
@@ -112,8 +115,11 @@ async function handler(req, res) {
       const session = await mongoose.startSession();
       session.startTransaction();
       try {
-        let total = 0;
+        let totalRevenue = 0;
+        let totalCost = 0; // --- ADDED: To calculate profit ---
         const processedItems = [];
+
+        // Validate items and calculate totals/costs
         for (const item of items) {
           const product = await Product.findById(item.productId).session(
             session
@@ -122,23 +128,36 @@ async function handler(req, res) {
             throw new Error(`Product not found.`);
           if (product.stock < item.quantity)
             throw new Error(`Not enough stock for ${product.name}.`);
-          total += product.price * item.quantity;
+
+          const itemRevenue = product.price * item.quantity;
+          const itemCost = product.cost * item.quantity; // --- ADDED ---
+
+          totalRevenue += itemRevenue;
+          totalCost += itemCost; // --- ADDED ---
+
           processedItems.push({
             productId: item.productId,
             name: product.name,
             quantity: item.quantity,
             price: product.price,
+            cost: product.cost, // --- ADDED: Store cost at time of sale ---
           });
         }
 
+        const totalProfit = totalRevenue - totalCost; // --- ADDED: Calculate profit ---
+
+        // Create the order document
         const order = new Order({
           shopId,
           customerName,
           billerName: req.user.name,
           items: processedItems,
-          total,
+          total: totalRevenue, // 'total' field represents revenue
+          totalProfit: totalProfit, // --- ADDED: Save calculated profit ---
         });
         const savedOrder = await order.save({ session });
+
+        // Update product stock and check for low stock notifications
         for (const item of processedItems) {
           const product = await Product.findById(item.productId).session(
             session
@@ -148,6 +167,7 @@ async function handler(req, res) {
             product.stock > product.lowStockThreshold &&
             newStock <= product.lowStockThreshold
           ) {
+            // Use create with session, ensuring atomicity if needed elsewhere
             await Notification.create(
               [
                 {
@@ -158,12 +178,15 @@ async function handler(req, res) {
               { session }
             );
           }
-          await Product.updateOne(
-            { _id: item.productId },
-            { $set: { stock: newStock } }
-          ).session(session);
+          // Update stock using findByIdAndUpdate for efficiency
+          await Product.findByIdAndUpdate(
+            item.productId,
+            { $set: { stock: newStock } },
+            { session } // Ensure update is part of the transaction
+          );
         }
 
+        // Generate Invoice PDF
         const shop = await Shop.findById(shopId).session(session);
         const invoicesDir = path.join(process.cwd(), "public", "invoices");
         fs.mkdirSync(invoicesDir, { recursive: true });
@@ -172,16 +195,18 @@ async function handler(req, res) {
 
         await generateInvoicePDF(savedOrder, shop, pdfPath);
 
+        // Create Invoice Document
         const invoice = new Invoice({
           shopId,
           orderId: savedOrder._id,
           customerName: savedOrder.customerName,
           billerName: savedOrder.billerName,
-          total: savedOrder.total,
+          total: savedOrder.total, // Revenue
           pdfPath: relativePdfPath,
         });
         await invoice.save({ session });
 
+        // Commit Transaction
         await session.commitTransaction();
         res.status(201).json({
           message: "Order created successfully",
@@ -199,7 +224,7 @@ async function handler(req, res) {
       }
       break;
 
-    case "GET":
+    case "GET": // GET handler remains the same
       try {
         const orders = await Order.find({ shopId }).sort({ date: -1 });
         res.status(200).json({ orders });
