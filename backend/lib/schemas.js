@@ -15,11 +15,12 @@ You have access to the following Mongoose models and schemas:
           "category": { "type": "String" },
           "price": { "type": "Number" }, // Selling price to customer
           "cost": { "type": "Number" }, // Purchase cost from supplier
-          "stock": { "type": "Number" } // Current quantity in stock
+          "stock": { "type": "Number" }, // Current quantity in stock
+          "lowStockThreshold": { "type": "Number" } // Threshold for low stock alert
         }
 
 2.  **Order Model** (Collection: "orders")
-    * Description: Represents a single sale/order made.
+    * Description: Represents a single sale/order made. Contains calculated revenue and profit.
     * Schema:
         {
           "shopId": { "type": "ObjectId", "ref": "Shop" },
@@ -28,13 +29,15 @@ You have access to the following Mongoose models and schemas:
           "items": [
             {
               "productId": { "type": "ObjectId", "ref": "Product" },
-              "name": { "type": "String" },
+              "name": { "type": "String" }, // Name at time of sale
               "quantity": { "type": "Number" },
-              "price": { "type": "Number" } // The price at the time of sale
+              "price": { "type": "Number" }, // Selling price at time of sale
+              "cost": { "type": "Number" } // Cost price at time of sale
             }
           ],
-          "total": { "type": "Number" },
-          "date": { "type": "Date" }
+          "total": { "type": "Number" }, // Total Revenue for the order
+          "totalProfit": { "type": "Number" }, // Total Profit calculated for the order (total revenue - total cost of items)
+          "date": { "type": "Date" } // Date the order was created
         }
 
 3.  **Invoice Model** (Collection: "invoices")
@@ -43,15 +46,15 @@ You have access to the following Mongoose models and schemas:
         {
           "shopId": { "type": "ObjectId", "ref": "Shop" },
           "orderId": { "type": "ObjectId", "ref": "Order" },
-          "pdfPath": { "type": "String" },
+          "pdfPath": { "type": "String" }, // Relative path to the PDF file
           "customerName": { "type": "String" },
           "billerName": { "type": "String" },
-          "total": { "type": "Number" },
-          "date": { "type": "Date" }
+          "total": { "type": "Number" }, // Matches the Order total (Revenue)
+          "date": { "type": "Date" } // Date the invoice/order was created
         }
 
 4.  **User Model** (Collection: "users")
-    * Description: Represents an owner or employee.
+    * Description: Represents an owner or employee. Contains salary details.
     * Schema:
         {
           "name": { "type": "String" },
@@ -59,8 +62,19 @@ You have access to the following Mongoose models and schemas:
           "role": { "type": "String", "enum": ["owner", "employee"] },
           "shopId": { "type": "ObjectId", "ref": "Shop" },
           "salary": {
-            "amount": { "type": "Number" },
-            "status": { "type": "String", "enum": ["paid", "pending"] }
+            "amount": { "type": "Number" }, // Monthly salary amount
+            "status": { "type": "String", "enum": ["paid", "pending"] } // Current payment status
+            // Note: 'passwordHash' is excluded for security
           }
+        }
+
+5. **Notification Model** (Collection: "notifications")
+    * Description: Stores alerts, primarily for low stock.
+    * Schema:
+        {
+          "shopId": { "type": "ObjectId", "ref": "Shop" },
+          "message": { "type": "String" }, // The notification text
+          "isRead": { "type": "Boolean" }, // Whether the owner has seen it
+          "createdAt": { "type": "Date" } // When the notification was created
         }
 `;

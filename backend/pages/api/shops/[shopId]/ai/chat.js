@@ -21,49 +21,66 @@ const ALLOWED_MODELS = {
   User,
 };
 
-// --- ADD THIS NEW FUNCTION ---
-// --- THIS IS THE NEW REGEX ---
+// --- UPDATED FUNCTION ---
+// Now handles both invalid ObjectId strings AND the specific invalid Date object format
+
 const objectIdRegex = /ObjectId\((?:'([^']*)'|([^)]*))\)/;
 
-/**
- * Recursively cleans a query object from the AI.
- * It finds strings like "ObjectId('...')" and extracts the inner ID.
- */
 function cleanMongoQuery(obj) {
+  // Base cases: null or not an object/array
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
 
+  // Handle arrays recursively
   if (Array.isArray(obj)) {
     return obj.map(cleanMongoQuery);
   }
 
+  // --- NEW: Check for the specific invalid date format ---
+  if (obj['$date'] && obj['$date']['$numberLong'] !== undefined) {
+    // Attempt to convert the numberLong (which is usually milliseconds since epoch)
+    const milliseconds = parseInt(obj['$date']['$numberLong'], 10);
+    if (!isNaN(milliseconds)) {
+      // If valid, return a proper JavaScript Date object
+      // Mongoose understands JS Date objects in queries
+      console.log(`[CleanQuery] Converted invalid date object to JS Date: ${new Date(milliseconds)}`);
+      return new Date(milliseconds);
+    } else {
+       // If conversion fails, maybe return null or keep original to let Mongoose handle potential error downstream
+       console.warn(`[CleanQuery] Found invalid date object, but failed to parse $numberLong: ${obj['$date']['$numberLong']}`);
+       return obj; // Return original problematic object
+    }
+  }
+  // --- END NEW ---
+
+
+  // Process object properties recursively
   const newObj = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const value = obj[key];
 
       if (typeof value === 'string') {
+        // Clean ObjectId strings
         const match = value.match(objectIdRegex);
         if (match) {
-          // Found a bad ObjectId string, extract the real ID
-          // --- THIS IS THE NEW LOGIC ---
-          // match[1] is for 'id', match[2] is for id (no quotes)
           newObj[key] = match[1] || match[2];
         } else {
           newObj[key] = value;
         }
       } else if (typeof value === 'object') {
-        // Recurse into nested objects (like $in, $gte, etc.)
+        // Recurse into nested objects/arrays (this will also handle objects within query operators like $gte, $lte)
         newObj[key] = cleanMongoQuery(value);
       } else {
+        // Handle primitives (numbers, booleans, etc.)
         newObj[key] = value;
       }
     }
   }
   return newObj;
 }
-// --- END OF NEW FUNCTION ---
+// --- END OF UPDATED FUNCTION ---
 
 // --- CHANGED ---
 // 2. This is the new function to call the Google Gemini API
@@ -119,6 +136,8 @@ Rules:
 3.  If the question implies a number, add an "options" key with a "limit" object (max 50).
 4.  Provide a short "comment" explaining your query.
 5.  Only use the models provided: Product, Order, Invoice, User.
+6.  **--- ADD THIS RULE ---**
+    **When generating date comparisons (like using $gte or $lte), ALWAYS format the date value as an ISO 8601 string. Example: { date: { "$gte": "2025-10-01T00:00:00.000Z" } }**
 
 Example Question: "Which products are low on stock?"
 Example Response:
@@ -129,13 +148,28 @@ Example Response:
   "comment": "Searching for products with stock less than or equal to 10, sorting by stock ascending."
 }
 
+Example Question: "Show orders from October 2025"
+Example Response:
+{
+  "model": "Order",
+  "query": {
+    "date": {
+      "$gte": "2025-10-01T00:00:00.000Z",
+      "$lt": "2025-11-01T00:00:00.000Z"
+    }
+  },
+  "options": { "sort": { "date": -1 } },
+  "comment": "Searching for orders placed in October 2025, sorting by date descending."
+}
+
+
 Now, generate the JSON for the user's question.
 User Question: "${question}"
 JSON Response:
 `;
 
 const getAnswerGenerationPrompt = (question, dbResults) => `
-You are a helpful shop assistant AI. You will be given a user's question and the data retrieved from the database.
+You are a helpful shop assistant AI based in India. You will be given a user's question and the data retrieved from the database.
 Your job is to answer the user's question in a friendly, concise, natural language response.
 
 User Question: "${question}"
@@ -144,10 +178,12 @@ Database Results (as JSON):
 ${JSON.stringify(dbResults)}
 
 Rules:
-1.  If the results are empty, say you couldn't find any matching information.
+1.  If the results are empty, say you couldn't find any matching information for that period or criteria.
 2.  If the results are not empty, directly answer the question using the data.
-3.  Do not just repeat the JSON. Summarize it.
+3.  Do not just repeat the JSON. Summarize it clearly.
 4.  Be friendly and professional.
+5.  **--- ADD THIS RULE ---**
+    **When stating any monetary value (like prices, costs, revenue, profit, salary), ALWAYS use the Indian Rupee symbol (₹) before the number (e.g., ₹1,234.50, ₹50,000).**
 
 Assistant's Answer:
 `;

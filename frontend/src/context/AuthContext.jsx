@@ -12,6 +12,9 @@ import shopService from "../services/shopService.js";
 
 const AuthContext = createContext();
 
+// --- Define the chat storage key here or import it if you move it to a shared constants file ---
+const CHAT_STORAGE_KEY = "triactAiChatHistory"; // Key used in AiChat.jsx
+
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(null);
@@ -28,41 +31,62 @@ export const AuthProvider = ({ children }) => {
         if (decodedUser.shopId) {
           const details = await shopService.getShopDetails(decodedUser.shopId);
           setShopDetails(details);
+        } else {
+            setShopDetails(null); // Explicitly clear shop details if no shopId
         }
       } else {
+        // Token expired
         localStorage.removeItem("token");
+        localStorage.removeItem(CHAT_STORAGE_KEY); // Also clear chat if token expires
         setToken(null);
+        setUser(null);
+        setShopDetails(null);
+        setAuthToken(null);
       }
     } catch (error) {
+      console.error("Error loading data from token:", error);
       localStorage.removeItem("token");
+      localStorage.removeItem(CHAT_STORAGE_KEY); // Clear chat on error too
       setToken(null);
+      setUser(null);
+      setShopDetails(null);
+      setAuthToken(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (token) {
-      loadDataFromToken(token);
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setToken(storedToken); // Set token state
+      loadDataFromToken(storedToken); // Then load data
     } else {
-      setLoading(false);
+      setLoading(false); // No token, finish loading
     }
-  }, [token, loadDataFromToken]);
+  }, [loadDataFromToken]);
+
 
   const login = async (email, password) => {
     const { token: newToken } = await authService.login(email, password);
     localStorage.setItem("token", newToken);
     setToken(newToken);
+    // Reload user data after setting the token (will trigger useEffect)
+    // No need to call loadDataFromToken directly here, useEffect handles it
   };
 
   const logout = () => {
     localStorage.removeItem("token");
+    // --- ADD THIS LINE ---
+    localStorage.removeItem(CHAT_STORAGE_KEY); // Clear AI chat history on logout
+    // --------------------
     setToken(null);
     setUser(null);
     setShopDetails(null);
-    setAuthToken(null);
+    setAuthToken(null); // Clear token from API headers
   };
 
+  // Memoize context value to prevent unnecessary re-renders
   const authContextValue = useMemo(
     () => ({
       user,
@@ -72,9 +96,9 @@ export const AuthProvider = ({ children }) => {
       loading,
       login,
       logout,
-      setShopDetails,
+      setShopDetails, // Keep this if needed elsewhere
     }),
-    [user, token, shopDetails, loading]
+    [user, token, shopDetails, loading] // Dependencies for memoization
   );
 
   return (
