@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth.js";
 import PrivateRoute from "./components/PrivateRoute.jsx";
 import NavBar from "./components/NavBar.jsx";
+
+// Pages
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import OwnerDashboard from "./pages/OwnerDashboard.jsx";
@@ -14,8 +16,9 @@ import ManageEmployees from "./pages/ManageEmployees.jsx";
 import ShopSettings from "./pages/ShopSettings.jsx";
 import SalaryInfo from "./pages/SalaryInfo.jsx";
 import ViewInvoices from "./pages/ViewInvoices.jsx";
-import AiChat from "./pages/AiChat.jsx"; // <-- 1. Import the new page
+import AiChat from "./pages/AiChat.jsx"; // New page
 
+// --- Wrapper component for consistent dashboard layout ---
 const Dashboard = () => {
   const { user } = useAuth();
   if (user?.role === "owner") return <OwnerDashboard />;
@@ -25,21 +28,27 @@ const Dashboard = () => {
 
 function App() {
   const { shopDetails } = useAuth();
+
+  // --- Dynamic page title ---
   useEffect(() => {
-    if (shopDetails && shopDetails.shopName) {
-      document.title = `TRIACT - ${shopDetails.shopName}`;
-    } else {
-      document.title = "TRIACT";
-    }
+    document.title = shopDetails?.shopName
+      ? `TRIACT - ${shopDetails.shopName}`
+      : "TRIACT";
   }, [shopDetails]);
 
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div className="bg-gray-100 min-h-screen flex flex-col">
+      {/* Navbar */}
       <NavBar />
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+
+      {/* Main content */}
+      <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <Routes>
+          {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
+          {/* Protected Routes */}
           <Route
             path="/dashboard"
             element={
@@ -104,7 +113,6 @@ function App() {
               </PrivateRoute>
             }
           />
-          {/* --- 2. ADD THIS NEW ROUTE --- */}
           <Route
             path="/ai-chat"
             element={
@@ -113,11 +121,18 @@ function App() {
               </PrivateRoute>
             }
           />
-          {/* ----------------------------- */}
+
+          {/* Redirect root to dashboard */}
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </main>
+
+      {/* Optional footer */}
+      <footer className="bg-white border-t mt-auto p-4 text-center text-gray-500 text-sm">
+        &copy; {new Date().getFullYear()} TRIACT. All rights reserved.
+      </footer>
     </div>
   );
 }
+
 export default App;

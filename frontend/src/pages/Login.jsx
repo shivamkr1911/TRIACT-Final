@@ -6,11 +6,9 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
-  // This line is updated to get the isAuthenticated status
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // This effect will now work correctly to redirect users who are already logged in
   useEffect(() => {
     if (isAuthenticated) {
       navigate("/dashboard");
@@ -22,7 +20,6 @@ const Login = () => {
     setError(null);
     try {
       await login(email, password);
-      // After login, the useEffect above will handle the navigation
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -32,67 +29,71 @@ const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center pt-20">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-center text-gray-800">
-          Login to TRIACT
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50 p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-3xl shadow-2xl border border-gray-200">
+        <h2 className="text-3xl font-extrabold text-center text-teal-700">
+          Welcome Back!
         </h2>
+        <p className="text-center text-gray-600">
+          Log in to your TRIACT account
+        </p>
+
         {error && (
-          <p className="text-red-500 text-center bg-red-100 p-2 rounded">
+          <p className="text-red-600 bg-red-100 p-3 rounded-lg text-center font-medium">
             {error}
           </p>
         )}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-1">
             <label
               htmlFor="email"
-              className="text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700"
             >
               Email Address
             </label>
             <input
               id="email"
-              name="email"
               type="email"
-              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-teal-400 focus:border-teal-400 outline-none transition"
+              placeholder="you@example.com"
             />
           </div>
-          <div>
+
+          <div className="space-y-1">
             <label
               htmlFor="password"
-              className="text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700"
             >
               Password
             </label>
             <input
               id="password"
-              name="password"
               type="password"
-              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-teal-400 focus:border-teal-400 outline-none transition"
+              placeholder="••••••••"
             />
           </div>
-          <div>
-            <button
-              type="submit"
-              className="w-full px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Sign In
-            </button>
-          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3 bg-teal-600 text-white font-semibold rounded-xl shadow-md hover:bg-teal-700 hover:shadow-lg transition duration-200"
+          >
+            Sign In
+          </button>
         </form>
-        <p className="text-sm text-center text-gray-600">
+
+        <p className="text-center text-gray-600">
           Don't have an account?{" "}
           <Link
             to="/register"
-            className="font-medium text-indigo-600 hover:text-indigo-500"
+            className="font-medium text-orange-600 hover:text-orange-500 transition-colors"
           >
             Register here
           </Link>

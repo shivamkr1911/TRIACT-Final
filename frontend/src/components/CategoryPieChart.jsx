@@ -4,29 +4,28 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
+// Generate a unique color for each category
+const generateColors = (num) => {
+  const colors = [];
+  for (let i = 0; i < num; i++) {
+    const hue = Math.floor((360 / num) * i); // evenly spaced hues
+    colors.push(`hsl(${hue}, 70%, 60%)`); // vibrant HSL color
+  }
+  return colors;
+};
+
 const CategoryPieChart = ({ data }) => {
+  const colors = generateColors(data.length);
+  const borderColors = colors.map((c) => c.replace("60%", "40%")); // darker border
+
   const chartData = {
     labels: data.map((item) => item._id), // Category names
     datasets: [
       {
         label: "Sales (₹)",
         data: data.map((item) => item.totalSales),
-        backgroundColor: [
-          "rgba(255, 99, 132, 0.7)",
-          "rgba(54, 162, 235, 0.7)",
-          "rgba(255, 206, 86, 0.7)",
-          "rgba(75, 192, 192, 0.7)",
-          "rgba(153, 102, 255, 0.7)",
-          "rgba(255, 159, 64, 0.7)",
-        ],
-        borderColor: [
-          "rgba(255, 99, 132, 1)",
-          "rgba(54, 162, 235, 1)",
-          "rgba(255, 206, 86, 1)",
-          "rgba(75, 192, 192, 1)",
-          "rgba(153, 102, 255, 1)",
-          "rgba(255, 159, 64, 1)",
-        ],
+        backgroundColor: colors,
+        borderColor: borderColors,
         borderWidth: 1,
       },
     ],

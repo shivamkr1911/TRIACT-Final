@@ -3,14 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import shopService from "../services/shopService";
 import { useClickOutside } from "../hooks/useClickOutside.js";
+import { BellIcon as Bell, ChevronDownIcon } from "@heroicons/react/24/outline";
 
-const Dropdown = ({
-  buttonContent,
-  children,
-  widthClass = "w-56",
-  onOpen = () => {},
-  onClose = () => {},
-}) => {
+const Dropdown = ({ buttonContent, children, widthClass = "w-56", onOpen = () => {}, onClose = () => {} }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -26,25 +21,20 @@ const Dropdown = ({
   const handleToggle = () => {
     const nextState = !isOpen;
     setIsOpen(nextState);
-    if (nextState) {
-      onOpen();
-    } else {
-      onClose();
-    }
+    nextState ? onOpen() : onClose();
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={handleToggle}
-        className="text-gray-600 hover:text-indigo-600 focus:outline-none flex items-center"
+        className="flex items-center space-x-1 text-gray-700 hover:text-indigo-600 font-medium transition-colors"
       >
         {buttonContent}
+        <ChevronDownIcon className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen && (
-        <div
-          className={`absolute right-0 mt-2 ${widthClass} bg-white rounded-md shadow-lg z-20 border py-1`}
-        >
+        <div className={`absolute right-0 mt-2 ${widthClass} bg-white dark:bg-gray-800 rounded-lg shadow-lg z-20 py-1 border border-gray-200 dark:border-gray-700`}>
           <div onClick={() => setIsOpen(false)}>{children}</div>
         </div>
       )}
@@ -59,18 +49,13 @@ const NavBar = () => {
 
   const fetchNotifications = useCallback(() => {
     if (isAuthenticated && user?.shopId) {
-      shopService
-        .getNotifications(user.shopId)
-        .then(setNotifications)
-        .catch((err) => console.error("Failed to fetch notifications:", err));
-    } else {
-      setNotifications([]);
-    }
+      shopService.getNotifications(user.shopId).then(setNotifications).catch(console.error);
+    } else setNotifications([]);
   }, [isAuthenticated, user]);
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 1000);
+    const interval = setInterval(fetchNotifications, 3000); // 3s polling
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
@@ -79,9 +64,7 @@ const NavBar = () => {
   const handleMarkNotificationsRead = () => {
     if (unreadCount > 0) {
       shopService.markNotificationsAsRead(user.shopId).then(() => {
-        setNotifications((current) =>
-          current.map((n) => ({ ...n, isRead: true }))
-        );
+        setNotifications((current) => current.map((n) => ({ ...n, isRead: true })));
       });
     }
   };
@@ -91,201 +74,91 @@ const NavBar = () => {
     navigate("/login");
   };
 
-  const BellIcon = ({ unreadCount }) => (
-    <div className="relative">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="w-6 h-6"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
-        />
-      </svg>
-      {unreadCount > 0 && (
-        <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white animate-pulse">
-          {unreadCount}
-        </span>
-      )}
-    </div>
-  );
-
-  const DropdownArrow = () => (
-    <svg
-      className="w-4 h-4 ml-1"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        d="M19 9l-7 7-7-7"
-      ></path>
-    </svg>
-  );
-
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white dark:bg-gray-900 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-        <Link to="/" className="text-2xl font-bold text-indigo-600">
-          TRIACT
-        </Link>
+        {/* Logo */}
+       <Link
+  to="/"
+  className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 transition-colors"
+>
+  TRIACT
+</Link>
+
+
+        {/* Links & dropdowns */}
         <div className="flex items-center space-x-6">
           {isAuthenticated ? (
             <>
-              <Link
-                to="/dashboard"
-                className="text-gray-600 hover:text-indigo-600 font-medium"
-              >
+              <Link to="/dashboard" className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors">
                 Home
               </Link>
-
-              {/* --- ADD THIS NEW LINK --- */}
-              <Link
-                to="/ai-chat"
-                className="text-gray-600 hover:text-indigo-600 font-medium"
-              >
-                AI Assistant
+              <Link to="/ai-chat" className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors">
+                TRIACT.AI
               </Link>
-              {/* --------------------------- */}
 
-              <Dropdown
-                buttonContent={
-                  <>
-                    <span>Orders</span>
-                    <DropdownArrow />
-                  </>
-                }
-              >
-                <Link
-                  to="/create-order"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
+              <Dropdown buttonContent={<span>Orders</span>}>
+                <Link to="/create-order" className="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
                   Create Order
                 </Link>
-                <Link
-                  to="/scan-invoice"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
+                <Link to="/scan-invoice" className="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
                   Scan Invoice
                 </Link>
-                <Link
-                  to="/view-invoices"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
+                <Link to="/view-invoices" className="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
                   View Invoices
                 </Link>
               </Dropdown>
 
               {user?.role === "owner" && (
-                <Dropdown
-                  buttonContent={
-                    <>
-                      <span>Settings</span>
-                      <DropdownArrow />
-                    </>
-                  }
-                >
-                  <Link
-                    to="/manage-stock"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
+                <Dropdown buttonContent={<span>Settings</span>}>
+                  <Link to="/manage-stock" className="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
                     Manage Stock
                   </Link>
-                  <Link
-                    to="/manage-employees"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
+                  <Link to="/manage-employees" className="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
                     Manage Employees
                   </Link>
-                  <Link
-                    to="/shop-settings"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
+                  <Link to="/shop-settings" className="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
                     Shop Settings
                   </Link>
                 </Dropdown>
               )}
 
               {user?.role === "employee" && (
-                <Link
-                  to="/salary-info"
-                  className="text-gray-600 hover:text-indigo-600"
-                >
+                <Link to="/salary-info" className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors">
                   Salary Info
                 </Link>
               )}
 
-              <div className="flex items-center space-x-4 border-l pl-6">
-                <Dropdown
-                  buttonContent={<BellIcon unreadCount={unreadCount} />}
-                  onClose={handleMarkNotificationsRead}
-                  widthClass="w-80"
-                >
-                  <div className="p-3 font-bold border-b text-sm">
-                    Notifications
-                  </div>
+              {/* Notifications & Profile */}
+              <div className="flex items-center space-x-4 border-l border-gray-200 dark:border-gray-700 pl-6">
+                <Dropdown buttonContent={<Bell className="w-6 h-6 text-gray-600 dark:text-gray-300" />} onClose={handleMarkNotificationsRead} widthClass="w-80">
+                  <div className="p-3 font-semibold border-b border-gray-200 dark:border-gray-700 text-sm">Notifications</div>
                   <ul className="py-1 max-h-80 overflow-y-auto">
                     {notifications.length > 0 ? (
                       notifications.map((n) => (
-                        <li
-                          key={n._id}
-                          className={`px-4 py-3 border-b last:border-b-0 ${
-                            !n.isRead ? "bg-indigo-50" : "bg-white"
-                          }`}
-                        >
-                          <p
-                            className={`text-sm ${
-                              !n.isRead
-                                ? "font-semibold text-gray-900"
-                                : "text-gray-600"
-                            }`}
-                          >
+                        <li key={n._id} className={`px-4 py-3 border-b last:border-b-0 rounded-md ${!n.isRead ? "bg-indigo-50 dark:bg-indigo-800" : "bg-white dark:bg-gray-900"}`}>
+                          <p className={`text-sm ${!n.isRead ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-600 dark:text-gray-300"}`}>
                             {n.message}
                           </p>
-                          <div className="text-xs text-gray-400 mt-1">
-                            {new Date(n.createdAt).toLocaleString()}
-                          </div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
                         </li>
                       ))
                     ) : (
-                      <li className="px-4 py-3 text-sm text-gray-500 text-center">
-                        You're all caught up!
-                      </li>
+                      <li className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">You're all caught up!</li>
                     )}
                   </ul>
                 </Dropdown>
 
-                <span className="text-gray-800 font-medium">
-                  Hi, {user.name}
-                </span>
-
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition duration-200"
-                >
+                <span className="text-gray-800 dark:text-gray-200 font-medium">Hi, {user.name}</span>
+                <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white px-4 py-1 rounded-lg transition-colors">
                   Logout
                 </button>
               </div>
             </>
           ) : (
             <>
-              <Link to="/login" className="text-gray-600 hover:text-indigo-600">
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="text-gray-600 hover:text-indigo-600"
-              >
-                Register
-              </Link>
+              <Link to="/login" className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors">Login</Link>
+              <Link to="/register" className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors">Register</Link>
             </>
           )}
         </div>

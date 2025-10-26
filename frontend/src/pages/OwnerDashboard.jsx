@@ -30,9 +30,7 @@ const OwnerDashboard = () => {
       return;
     }
     try {
-      const dashboardData = await shopService.getOwnerDashboardData(
-        user.shopId
-      );
+      const dashboardData = await shopService.getOwnerDashboardData(user.shopId);
       setData(dashboardData);
     } catch (err) {
       setError("Failed to fetch dashboard data.");
@@ -47,117 +45,69 @@ const OwnerDashboard = () => {
   }, [fetchData]);
 
   const formatCurrency = (amount) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount || 0);
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount || 0);
 
-  if (loading) {
-    return <div className="text-center mt-10">Loading dashboard...</div>;
-  }
-  if (error) {
-    return <div className="text-center mt-10 text-red-500">{error}</div>;
-  }
-
-  if (user && user.role === "owner" && !user.shopId) {
-    return <CreateShopForm />;
-  }
-
-  if (!data) {
-    return <div className="text-center mt-10">No data available.</div>;
-  }
+  if (loading) return <div className="text-center mt-16 text-gray-500 text-lg">Loading dashboard...</div>;
+  if (error) return <div className="text-center mt-16 text-red-500 text-lg">{error}</div>;
+  if (user && user.role === "owner" && !user.shopId) return <CreateShopForm />;
+  if (!data) return <div className="text-center mt-16 text-gray-500 text-lg">No data available.</div>;
 
   const kpis = [
-    {
-      title: "Revenue (This Month)",
-      value: formatCurrency(data.revenueThisMonth),
-      icon: <DollarSignIcon />,
-    },
-    {
-      title: "Profit (This Month)",
-      value: formatCurrency(data.profitThisMonth),
-      icon: <TrendingUpIcon />,
-    },
-    {
-      title: "Units Sold (This Month)",
-      value: data.unitsSoldThisMonth,
-      icon: <ChartBarIcon />,
-    },
-    {
-      title: "Total Product Types",
-      value: data.totalProductTypes,
-      icon: <CubeIcon />,
-    },
+    { title: "Revenue (This Month)", value: formatCurrency(data.revenueThisMonth), icon: <DollarSignIcon /> },
+    { title: "Profit (This Month)", value: formatCurrency(data.profitThisMonth), icon: <TrendingUpIcon /> },
+    { title: "Units Sold (This Month)", value: data.unitsSoldThisMonth, icon: <ChartBarIcon /> },
+    { title: "Total Product Types", value: data.totalProductTypes, icon: <CubeIcon /> },
   ];
 
   return (
-    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
-      <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+    <div className="space-y-10 p-6 sm:p-8 lg:p-12 max-w-7xl mx-auto">
+      <h1 className="text-4xl font-extrabold text-gray-900">Owner Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpis.map((kpi) => (
-          <div
-            key={kpi.title}
-            className="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 transition hover:shadow-xl hover:-translate-y-1"
-          >
-            <div className="bg-indigo-100 text-indigo-600 rounded-full p-3">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-8 h-8"
-              >
+          <div key={kpi.title} className="bg-gradient-to-br from-indigo-50 via-white to-indigo-100 p-6 rounded-3xl shadow-lg hover:shadow-2xl transition transform hover:-translate-y-1 flex items-center space-x-4">
+            <div className="bg-indigo-100 text-indigo-600 p-4 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10">
                 {kpi.icon}
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">{kpi.title}</p>
-              <p className="text-3xl font-bold text-gray-900">{kpi.value}</p>
+              <p className="text-gray-500 font-medium">{kpi.title}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3 bg-white p-4 rounded-lg shadow-md">
-          {data.revenueTrend && data.revenueTrend.length > 0 ? (
-            <RevenueChart data={data.revenueTrend} />
-          ) : (
-            <div className="text-center text-gray-500 py-10">
-              No revenue data for the last 30 days.
-            </div>
-          )}
+        <div className="lg:col-span-3 bg-white p-6 rounded-2xl shadow-md">
+          {data.revenueTrend?.length > 0 ? <RevenueChart data={data.revenueTrend} /> : <div className="text-center text-gray-400 py-12">No revenue data available.</div>}
         </div>
-        <div className="lg:col-span-2 bg-white p-4 rounded-lg shadow-md">
-          <CategoryPieChart data={data.salesByCategory} />
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-md">
+          {data.salesByCategory?.length > 0 ? <CategoryPieChart data={data.salesByCategory} /> : <div className="text-center text-gray-400 py-12">No category sales data.</div>}
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4 text-gray-700">
-          Low Stock Alerts
-        </h2>
-        {data.lowStockItems.length > 0 ? (
-          <ul className="divide-y divide-gray-200">
+      {/* Low Stock Alerts */}
+      <div className="bg-white p-6 rounded-2xl shadow-md">
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">Low Stock Alerts</h2>
+        {data.lowStockItems?.length > 0 ? (
+          <ul className="space-y-3">
             {data.lowStockItems.map((item) => (
-              <li
-                key={item._id}
-                className="py-3 flex justify-between items-center"
-              >
+              <li key={item._id} className="flex justify-between items-center p-4 border-l-4 border-red-500 bg-red-50 rounded-lg shadow-sm hover:shadow-md transition">
                 <span className="font-medium text-gray-800">{item.name}</span>
-                <span className="text-sm text-red-600 font-bold">
-                  Only {item.stock} left
-                </span>
+                <span className="text-red-600 font-bold">{item.stock} left</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-gray-500">No items are currently low on stock.</p>
+          <p className="text-gray-500 text-center py-6">All items are sufficiently stocked.</p>
         )}
       </div>
     </div>
   );
 };
+
 export default OwnerDashboard;

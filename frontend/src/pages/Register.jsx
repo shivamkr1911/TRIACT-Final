@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { UserIcon, EnvelopeIcon, LockClosedIcon, BuildingStorefrontIcon } from "@heroicons/react/24/outline";
 import authService from "../services/authService";
 
 const Register = () => {
@@ -7,7 +8,7 @@ const Register = () => {
     name: "",
     email: "",
     password: "",
-    role: "owner", // Default role
+    role: "owner",
     shopId: "",
   });
   const [error, setError] = useState(null);
@@ -35,8 +36,8 @@ const Register = () => {
       }
 
       await authService.register(userData);
-      setSuccess("Registration successful! Please log in.");
-      setTimeout(() => navigate("/login"), 2000); // Redirect to login after 2 seconds
+      setSuccess("Registration successful! Redirecting to login...");
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       setError(
         err.response?.data?.message || "Registration failed. Please try again."
@@ -45,52 +46,55 @@ const Register = () => {
   };
 
   return (
-    <div className="flex items-center justify-center pt-12">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-center text-gray-800">
-          Register for TRIACT
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100 p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-3xl shadow-2xl hover:shadow-3xl transition duration-300">
+        <h2 className="text-3xl font-extrabold text-center text-gray-800">
+          Create your TRIACT account
         </h2>
+
         {error && (
-          <p className="text-red-500 text-center bg-red-100 p-2 rounded">
+          <p className="text-red-600 bg-red-100 border-l-4 border-red-500 p-3 rounded-md">
             {error}
           </p>
         )}
         {success && (
-          <p className="text-green-500 text-center bg-green-100 p-2 rounded">
+          <p className="text-green-600 bg-green-100 border-l-4 border-green-500 p-3 rounded-md">
             {success}
           </p>
         )}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Full Name
-            </label>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Name */}
+          <div className="relative">
+            <UserIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               name="name"
               value={name}
               onChange={onChange}
               required
-              className="w-full px-3 py-2 mt-1 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Full Name"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 transition"
             />
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Email Address
-            </label>
+
+          {/* Email */}
+          <div className="relative">
+            <EnvelopeIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="email"
               name="email"
               value={email}
               onChange={onChange}
               required
-              className="w-full px-3 py-2 mt-1 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Email Address"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 transition"
             />
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Password
-            </label>
+
+          {/* Password */}
+          <div className="relative">
+            <LockClosedIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="password"
               name="password"
@@ -98,51 +102,53 @@ const Register = () => {
               onChange={onChange}
               required
               minLength="6"
-              className="w-full px-3 py-2 mt-1 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Password"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 transition"
             />
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Role</label>
+
+          {/* Role */}
+          <div className="relative">
+            <BuildingStorefrontIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <select
               name="role"
               value={role}
               onChange={onChange}
-              className="w-full px-3 py-2 mt-1 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 transition"
             >
               <option value="owner">Shop Owner</option>
               <option value="employee">Employee</option>
             </select>
           </div>
+
+          {/* Shop ID (conditional) */}
           {role === "employee" && (
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Shop ID
-              </label>
+            <div className="relative">
               <input
                 type="text"
                 name="shopId"
                 value={shopId}
                 onChange={onChange}
                 required
-                className="w-full px-3 py-2 mt-1 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Ask owner for Shop ID"
+                placeholder="Shop ID (Ask owner)"
+                className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500 transition"
               />
             </div>
           )}
-          <div>
-            <button
-              type="submit"
-              className="w-full px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-            >
-              Register
-            </button>
-          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-indigo-700 text-white font-bold rounded-xl shadow-lg hover:from-indigo-600 hover:to-indigo-800 transition"
+          >
+            Register
+          </button>
         </form>
-        <p className="text-sm text-center text-gray-600">
+
+        <p className="text-sm text-center text-gray-500">
           Already have an account?{" "}
           <Link
             to="/login"
-            className="font-medium text-indigo-600 hover:text-indigo-500"
+            className="text-indigo-600 font-medium hover:text-indigo-500"
           >
             Login here
           </Link>

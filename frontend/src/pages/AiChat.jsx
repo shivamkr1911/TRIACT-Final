@@ -4,29 +4,23 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import shopService from "../services/shopService";
 
-// --- 1. Define a key for localStorage ---
 const CHAT_STORAGE_KEY = "triactAiChatHistory";
 
 const AiChat = () => {
   const { user } = useAuth();
 
-  // --- 2. Load initial messages from localStorage ---
   const [messages, setMessages] = useState(() => {
     const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
     if (savedMessages) {
       try {
-        // Attempt to parse the saved messages
         const parsedMessages = JSON.parse(savedMessages);
-        // Basic validation: Check if it's an array and has at least one item
         if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
           return parsedMessages;
         }
       } catch (e) {
         console.error("Failed to parse chat history from localStorage:", e);
-        // If parsing fails, fall back to default
       }
     }
-    // Default message if nothing is saved or parsing failed
     return [
       {
         sender: "ai",
@@ -39,19 +33,20 @@ const AiChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll to the bottom when new messages appear
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // --- 3. Save messages to localStorage whenever they change ---
   useEffect(() => {
-    // Don't save if it's just the initial default message
-    if (messages.length > 1 || messages[0].sender !== "ai" || messages[0].text !== "Hi! I'm your TRIACT AI assistant. Ask me questions about your inventory, sales, or employees.") {
-       localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    if (
+      messages.length > 1 ||
+      messages[0].sender !== "ai" ||
+      messages[0].text !==
+        "Hi! I'm your TRIACT AI assistant. Ask me questions about your inventory, sales, or employees."
+    ) {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
     }
   }, [messages]);
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,7 +76,6 @@ const AiChat = () => {
     }
   };
 
-  // --- 4. (Optional but recommended) Add a button to clear history ---
   const clearChatHistory = () => {
     localStorage.removeItem(CHAT_STORAGE_KEY);
     setMessages([
@@ -92,66 +86,72 @@ const AiChat = () => {
     ]);
   };
 
-
   return (
-    <div className="flex flex-col h-[80vh] max-w-3xl mx-auto bg-white shadow-lg rounded-lg">
-      <div className="flex justify-between items-center p-4 border-b"> {/* Added flex container */}
-        <h1 className="text-xl font-bold text-gray-800">
-          AI Inventory Assistant
+    <div className="flex flex-col h-[80vh] max-w-3xl mx-auto bg-gradient-to-tr from-blue-50 via-purple-50 to-pink-50 shadow-2xl rounded-3xl border border-gray-100 overflow-hidden">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-200 rounded-t-3xl">
+        <h1 className="text-lg sm:text-xl font-semibold text-purple-700 flex items-center space-x-2">
+          <span>🧠</span>
+          <span>TRIACT AI Assistant</span>
         </h1>
-         {/* --- Add the clear button here --- */}
-         <button
-            onClick={clearChatHistory}
-            className="text-xs text-gray-500 hover:text-red-600 border px-2 py-1 rounded hover:border-red-600"
-            title="Clear chat history"
-          >
-            Clear Chat
-          </button>
+        <button
+          onClick={clearChatHistory}
+          className="text-xs sm:text-sm text-gray-600 hover:text-red-600 border border-gray-300 px-3 py-1 rounded-lg transition-colors duration-200 hover:border-red-600"
+          title="Clear chat history"
+        >
+          Clear Chat
+        </button>
       </div>
 
-      {/* Message Area */}
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+      {/* Chat Area */}
+      <div className="flex-1 p-5 space-y-4 overflow-y-auto bg-transparent scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-gray-100">
         {messages.map((msg, index) => (
           <div
             key={index}
-            className={`flex ${
+            className={`flex items-end ${
               msg.sender === "ai" ? "justify-start" : "justify-end"
             }`}
           >
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg shadow ${
+              className={`max-w-[75%] px-5 py-3 rounded-2xl shadow-lg text-sm transition-all duration-300 break-words ${
                 msg.sender === "ai"
-                  ? "bg-gray-100 text-gray-800"
-                  : "bg-indigo-600 text-white"
+                  ? "bg-blue-100 text-gray-900 border border-blue-200"
+                  : "bg-gradient-to-r from-pink-500 to-purple-500 text-white"
               }`}
             >
-              <p>{msg.text}</p>
+              <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
             </div>
           </div>
         ))}
+
         {isLoading && (
           <div className="flex justify-start">
-            <div className="max-w-xs px-4 py-3 rounded-lg shadow bg-gray-100 text-gray-800">
+            <div className="max-w-[60%] px-4 py-3 rounded-2xl bg-blue-100 border border-blue-200 text-gray-800 shadow-sm">
               <p className="animate-pulse">AI is thinking...</p>
             </div>
           </div>
         )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} className="p-4 border-t flex space-x-2">
+      {/* Input Area */}
+      <form
+        onSubmit={handleSubmit}
+        className="flex items-center px-5 py-4 border-t bg-white/80 backdrop-blur-md rounded-b-3xl space-x-3"
+      >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about your inventory..."
-          className="flex-1 border rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Ask about inventory, sales, or employees..."
+          className="flex-1 border border-gray-300 rounded-2xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none placeholder-gray-400 disabled:bg-gray-100 transition-all duration-150"
           disabled={isLoading}
         />
         <button
           type="submit"
-          className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-400"
+          className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-2.5 rounded-2xl font-medium text-sm transition-colors duration-200 disabled:bg-gray-400"
           disabled={isLoading}
         >
           Send
