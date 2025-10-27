@@ -1,5 +1,30 @@
+// import { defineConfig } from "vite";
+// import react from "@vitejs/plugin-react";
+
+// export default defineConfig({
+//   plugins: [
+//     react({
+//       include: "**/*.{jsx,js}",
+//     }),
+//   ],
+//   // Use the more robust object syntax for the proxy
+//   server: {
+//     proxy: {
+//       "/api": {
+//         // target: "http://localhost:3001",
+//         target: "https://triact-final.vercel.app",
+//         changeOrigin: true, // This is often necessary
+//         secure: false,
+//       },
+//     },
+//   },
+// });
+
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 export default defineConfig({
   plugins: [
@@ -7,15 +32,26 @@ export default defineConfig({
       include: "**/*.{jsx,js}",
     }),
   ],
-  // Use the more robust object syntax for the proxy
+
   server: {
-    proxy: {
-      "/api": {
-        // target: "http://localhost:3001",
-        target: "https://triact-final.vercel.app/",
-        changeOrigin: true, // This is often necessary
-        secure: false,
-      },
-    },
+    proxy: isProduction
+      ? {} // Disable proxy in production
+      : {
+          "/api": {
+            target: "http://localhost:3001", // backend URL in dev
+            changeOrigin: true,
+            secure: false,
+          },
+        },
+  },
+
+  define: {
+    __API_BASE__: JSON.stringify(
+      isProduction
+        ? "https://triact-final.vercel.app" // your production backend
+        : "" // use proxy in development
+    ),
   },
 });
+
+

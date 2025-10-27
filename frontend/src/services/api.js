@@ -1,17 +1,22 @@
 import axios from "axios";
 
-// 1. Use the VITE_ environment variable for production
-// 2. Fall back to "/" for local development (to keep using your proxy)
-const API_URL = import.meta.env.VITE_API_BASE_URL || "/";
+// Use the injected global constant from vite.config.js
+// (falls back to "/" for safety if not defined)
+
+// const API_URL = typeof __API_BASE__ !== "undefined" ? __API_BASE__ : "/";
+
+// const api = axios.create({
+//   baseURL: API_URL,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
 
 const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: typeof __API_BASE__ !== "undefined" ? __API_BASE__ : "",
 });
 
-// Function to set the JWT token in the headers for all subsequent requests
+// Function to set the JWT token in headers for all subsequent requests
 export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
