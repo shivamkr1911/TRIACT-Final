@@ -33,25 +33,28 @@ export default defineConfig({
     }),
   ],
 
+  // Proxy only needed in development
   server: {
     proxy: isProduction
-      ? {} // Disable proxy in production
+      ? {}
       : {
           "/api": {
-            target: "http://localhost:3001", // backend URL in dev
+            target: "http://localhost:3001",
             changeOrigin: true,
             secure: false,
           },
         },
   },
 
+  // Define the API base for both environments
   define: {
     __API_BASE__: JSON.stringify(
       isProduction
-        ? "https://triact-final.vercel.app" // your production backend
-        : "" // use proxy in development
+        ? "https://triact-final.vercel.app" // backend deployed on Vercel
+        : "" // let Vite proxy handle it in dev
     ),
   },
 });
+
 
 
