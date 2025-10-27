@@ -2,10 +2,18 @@ import axios from "axios";
 
 // 1. Use the VITE_ environment variable for production
 // 2. Fall back to "/" for local development (to keep using your proxy)
-const API_URL = import.meta.env.VITE_API_BASE_URL || "/";
+
+// const API_URL = import.meta.env.VITE_API_BASE_URL || "/";
+
+// const api = axios.create({
+//   baseURL: API_URL,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: typeof __API_BASE__ !== "undefined" ? __API_BASE__ : "",
   headers: {
     "Content-Type": "application/json",
   },
