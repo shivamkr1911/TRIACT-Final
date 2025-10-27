@@ -1,0 +1,16 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "package.json",
+            "use": "@vercel/next"
+        }
+    ],
+    "buildCommand": "npm run seed && npm run build",
+    "outputDirectory": ".next",
+    "installCommand": "npm install",
+    "env": {
+        "NODE_ENV": "production"
+    },
+    "framework": "nextjs"
+}
